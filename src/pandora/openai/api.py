@@ -222,13 +222,17 @@ class API:
                                     images_data = json_data['choices'][0]['delta']['images']
                                     if isinstance(images_data, list):
                                         for _img in images_data:
-                                            image_type = _img.get('type')
-                                            image = _img.get(image_type)
-                                            if image.startswith('http'):
-                                                resp_content += '![img]({})'.format(image)
-                                            elif image.startswith('data:image/'):
-                                                img_type=image.split(';')[0].split('/')[1]
-                                                resp_content += await LocalConversation.save_image_file(image, self.web_origin, msg_id, img_type)
+                                            _img_data_type = _img.get('type')
+                                            _img_data = _img.get(_img_data_type)
+                                            if _img_data:
+                                                image = _img_data.get('url') or _img_data.get('data')
+                                                if image:
+                                                    if image.startswith('http'):
+                                                        resp_content += '![img]({})'.format(image)
+                                                    elif image.startswith('data:image/'):
+                                                        img_type=image.split(';')[0].split('/')[1]
+                                                        image_url = await LocalConversation.save_image_file(image, self.web_origin, msg_id, img_type)
+                                                        resp_content += image_url
                                                 
                                 try:
                                     _resp_content = json_data['choices'][0]['delta']['content']

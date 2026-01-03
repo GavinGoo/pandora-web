@@ -1,4 +1,4 @@
-const Pandora_Cache_Name = "PandoraWeb_Cache_250112";
+const Pandora_Cache_Name = "PandoraWeb_Cache_260104";
 
 self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
