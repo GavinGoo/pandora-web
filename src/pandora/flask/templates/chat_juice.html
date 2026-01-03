@@ -69,6 +69,20 @@
     <body class="antialiased">
         <div id="__next">
             <script>
+                (function() {
+                    var localTheme = localStorage.getItem("PANDORA_THEME");                  
+                    if (localTheme) {
+                        var cookies = document.cookie.split(';').map(c => c.trim());
+                        var themeCookie = cookies.find(c => c.startsWith('PANDORA_THEME='));
+                        if (!themeCookie || themeCookie.split('=')[1] !== localTheme) {
+                            document.cookie = "PANDORA_THEME=" + localTheme + ";";
+                            location.reload();
+                        }
+                    }
+                })();
+            </script>
+
+            <script>
                 !function() {
                     try {
                         var d = document.documentElement

@@ -217,7 +217,19 @@ class API:
                                 if _resp_content:
                                     resp_content = _resp_content
 
-                            if json_data['choices'][0].get('delta'):  # 适配GLM
+                            if json_data['choices'][0].get('delta'):
+                                if json_data['choices'][0]['delta'].get('images'):
+                                    images_data = json_data['choices'][0]['delta']['images']
+                                    if isinstance(images_data, list):
+                                        for _img in images_data:
+                                            image_type = _img.get('type')
+                                            image = _img.get(image_type)
+                                            if image.startswith('http'):
+                                                resp_content += '![img]({})'.format(image)
+                                            elif image.startswith('data:image/'):
+                                                img_type=image.split(';')[0].split('/')[1]
+                                                resp_content += await LocalConversation.save_image_file(image, self.web_origin, msg_id, img_type)
+                                                
                                 try:
                                     _resp_content = json_data['choices'][0]['delta']['content']
 

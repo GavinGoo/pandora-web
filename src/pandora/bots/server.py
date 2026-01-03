@@ -345,10 +345,11 @@ class ChatBot:
         model = request.args.get('model')
 
         token_key = request.args.get('token')
+        theme = request.cookies.get("PANDORA_THEME")
 
-        if getenv('PANDORA_OLD_CHAT') == 'True':
+        if getenv('PANDORA_OLD_CHAT') == 'True' or theme == 'oldschool':
             rendered = render_template('PandoraNeverDie.html', pandora_base=request.url_root.strip('/'), query=query)
-        elif getenv('PANDORA_CLASSIC') == 'True':
+        elif getenv('PANDORA_CLASSIC') == 'True' or theme == 'classic':
             rendered = render_template('chat_classic.html', pandora_base=request.url_root.strip('/'), query=query)
         else:
             rendered = render_template('chat_juice.html', pandora_base=request.url_root.strip('/'), query=query, model=model, q=q, voice_switch='true')

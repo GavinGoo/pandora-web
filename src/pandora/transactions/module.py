@@ -12,6 +12,7 @@ from os.path import join
 from os import getenv
 import os
 import json
+import base64
 from requests.models import Response
 import jwt
 import traceback
@@ -637,6 +638,14 @@ class LocalConversation:
         except:
             resp_content = '{}'.format('/img/' +file_name)
         # Console.debug_b('file_path: {}'.format(file_path))
+        
+        if resp.startswith('data:image/'):
+            header, encoded = resp.split(",", 1)
+            data = base64.b64decode(encoded)
+            with open(file_path, 'wb') as f:
+                f.write(data)
+
+            return resp_content
 
         with open(file_path, 'wb') as f:
             # async for chunk in resp.aiter_bytes():  # httpx
