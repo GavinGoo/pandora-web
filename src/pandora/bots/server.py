@@ -123,7 +123,7 @@ class ChatBot:
             app.register_error_handler(ex, self.__handle_error)
 
         app.route('/ces/v1/t', methods=['GET', 'POST'])(self.fake_check)    # check
-        app.route('/ces/v1/p', methods=['GET', 'POST'])(self.fake_check)    # check
+        app.route('/ces/v1/p', methods=['GET', 'POST'])(self.checkpoint_p)    # check
         app.route('/ces/v1/i', methods=['GET', 'POST'])(self.fake_check)    # check
         app.route('/ces/v1/projects/oai/settings')(self.fake_proj_settings)    # check
         app.route('/v1/rgstr', methods=['GET', 'POST', 'PATCH'])(self.fake_check)    # check
@@ -542,7 +542,7 @@ class ChatBot:
                 "banner_info": None,
                 "blocked_features": [],
                 "model_limits": [],
-                "default_model_slug": self.PANDORA_DEFAULT_MODEL if self.PANDORA_DEFAULT_MODEL else "gpt-4o-mini",
+                "default_model_slug": session.get('model', self.PANDORA_DEFAULT_MODEL if self.PANDORA_DEFAULT_MODEL else "gpt-4o-mini"),
             }
 
         return jsonify(data)
@@ -575,6 +575,17 @@ class ChatBot:
     @staticmethod
     def fake_proj_settings():
         return jsonify({"integrations":{"Segment.io":{"host":""}}})
+    
+    # @staticmethod
+    def checkpoint_p(self):
+        payload = request.data
+        if payload:
+            payload = json.loads(payload)
+            search_url = payload['properties'].get('search')
+            if search_url:
+                model_choice = search_url.split('?model=')[-1]
+                session['model'] = model_choice
+        return jsonify({"status":"success"})
     
     @staticmethod
     def old_check():

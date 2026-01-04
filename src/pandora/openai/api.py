@@ -133,6 +133,7 @@ class API:
         # SAVE_ASSISTANT_MSG = False
         msg_id = str(uuid.uuid4())
         create_time = int(time.time())
+        THINKING_FLAG = False
 
         if model == 'gpt-4o' and not self.LOCAL_OP and not self.OAI_ONLY: # 0516: 同时启用OAI与API模式时避免与OAI模型冲突
             if API_DATA and API_DATA.get(model):
@@ -217,9 +218,19 @@ class API:
                                 if _resp_content:
                                     resp_content = _resp_content
 
-                            if json_data['choices'][0].get('delta'):
-                                if json_data['choices'][0]['delta'].get('images'):
-                                    images_data = json_data['choices'][0]['delta']['images']
+                            delta = json_data['choices'][0].get('delta')
+                            if delta:
+                                # delta -> thinking
+                                reasoning_content = delta.get('reasoning_content')
+                                if reasoning_content:
+                                    if THINKING_FLAG == False:
+                                        THINKING_FLAG = True
+                                        resp_content += "> "
+                                    resp_content += reasoning_content.replace("\n", "\n> ")
+                                
+                                # delta -> images
+                                if delta.get('images'):
+                                    images_data = delta['images']
                                     if isinstance(images_data, list):
                                         for _img in images_data:
                                             _img_data_type = _img.get('type')
@@ -235,7 +246,7 @@ class API:
                                                         resp_content += image_url
                                                 
                                 try:
-                                    _resp_content = json_data['choices'][0]['delta']['content']
+                                    _resp_content = delta.get('content')
 
                                     if _resp_content:
                                         resp_content += _resp_content
@@ -1840,13 +1851,14 @@ class ChatGPT(API):
             # url = LocalConversation.get_url(model)
             url = API_DATA[model_alias].get('url')
             auth = LocalConversation.get_auth(model)
+            gemini_flag = API_DATA[model_alias].get('gemini', False)
             headers = {'User-Agent': self.user_agent, 'Content-Type': 'application/json'}
             history_list = []
             fake_data = {
                 "messages": [],
                 "model": API_DATA[model].get('slug'),
                 "stream": True,
-            } if 'gemini' not in model else {"contents":[]}
+            } if gemini_flag == False else {"contents":[]}
             # Console.warn('{} | {}'.format(model, auth))
             # Console.debug_b(f'发送消息: {content}')
 
@@ -1932,7 +1944,7 @@ class ChatGPT(API):
                         # fake_data['messages' if 'gemini' not in model else 'contents'].append(file_msg)
 
                     # else:
-                        if 'gemini' not in model:
+                        if gemini_flag == False:
                             fake_data['messages'].append({"role": item['role'], "content": item['message']})
                         else:
                             fake_data['contents'].append({"role": "user" if item['role'] == 'user' else "model", "parts": [{"text": item['message']}]})
@@ -1978,7 +1990,7 @@ class ChatGPT(API):
                         # LocalConversation.save_conversations_file(message_id, conversation_id, str(parts), str(attachments), file_url, file_type)
                         # Console.debug_b(f'保存file对话:\n parts: {str(parts)} \nattachments: {str(attachments)}\n')
 
-                    if 'gemini' in model:
+                    if gemini_flag == True:
                         gemini_file_msg = self.__gemini_msg_withfile(file_path, file_type)
                         if gemini_file_msg:
                             file_msg['parts'].append(gemini_file_msg)
@@ -2040,7 +2052,7 @@ class ChatGPT(API):
                     return self._request_sse(url, headers, fake_data, conversation_id, message_id, model, action, content)
 
                 # 适配Gemini
-                if 'gemini' in model:
+                if gemini_flag == True:
                     headers = {'User-Agent': self.user_agent, 'Content-Type': 'application/json'}
 
                     if prompt:
