@@ -1968,7 +1968,7 @@ class ChatGPT(API):
             ## 发送新消息
             ### 带附件
             if attachments:
-                if 'gemini' not in model:
+                if gemini_flag == False:
                     file_msg = {
                         "role": "user",
                         "content": [
@@ -2015,7 +2015,7 @@ class ChatGPT(API):
                     if 'kimi' in model:
                         fake_data['use_search'] = False
 
-                fake_data['messages' if 'gemini' not in model else 'contents'].append(file_msg)
+                fake_data['messages' if gemini_flag == False else 'contents'].append(file_msg)
 
                 # Console.debug('New Message | message_id: {} | content: {} | url: {}'.format(message_id, content, fake_data['messages'][-1]['content'][1]['image_url']['url'][:10]))   # dev
 
