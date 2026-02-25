@@ -8,7 +8,7 @@ from requests.models import Response
 
 # import httpx
 # import requests
-from curl_cffi import requests
+from curl_cffi import requests, CurlOpt
 from certifi import where
 
 from .. import __version__
