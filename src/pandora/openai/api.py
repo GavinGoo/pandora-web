@@ -8,7 +8,7 @@ from requests.models import Response
 
 # import httpx
 # import requests
-from curl_cffi import requests
+from curl_cffi import requests, CurlOpt
 from certifi import where
 
 from .. import __version__
@@ -403,7 +403,7 @@ class API:
                             "https": proxy_url,
                         }if 'proxy' in API_DATA[model] else None
         try:
-            async with requests.AsyncSession(verify=self.ca_bundle, proxies=proxy if proxy else self.proxy, impersonate='chrome110') as client:
+            async with requests.AsyncSession(verify=self.ca_bundle, proxies=proxy if proxy else self.proxy, impersonate='chrome110', curl_options={CurlOpt.LOW_SPEED_LIMIT: 0, CurlOpt.LOW_SPEED_TIME: 0}) as client:
                 async with client.stream('POST', url, json=data, headers=headers, timeout=60 if not self.req_timeout else self.req_timeout, http_version=1) as resp:
                     async for line in self.__process_sse(resp, conversation_id, message_id, model, action, prompt, isolation_code):
                         queue.put(line)
