@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# JetBrains IDEs configuration
+# IDEs
 .idea/
+.vscode/
 
 # macOS
 .DS_Store

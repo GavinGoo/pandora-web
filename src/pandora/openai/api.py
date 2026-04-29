@@ -106,10 +106,15 @@ class API:
         
         BLOB_FLAGE = False
         headers_data = dict(resp.headers)
+        image_flag = API_DATA[model].get('image', False)
         # Console.debug_b('resp_headers_data: {}'.format(headers_data))
         if headers_data['content-type'].startswith('image/'):    # gan, cf返回的键名是小写
             BLOB_FLAGE = True
             img_type = headers_data['content-type'].split('/')[1]
+            
+        if image_flag:
+            BLOB_FLAGE = True
+            img_type = "png"
 
         # 保证Headers: 'Content-Type':'text/event-stream;charset=UTF-8'
         # 否则如果直接透传，当某些API的响应头部'Content-Type'为json时，前端无法解析为SSE
@@ -227,6 +232,10 @@ class API:
                                         THINKING_FLAG = True
                                         resp_content += "> "
                                     resp_content += reasoning_content.replace("\n", "\n> ")
+                                else:
+                                    if THINKING_FLAG:
+                                        THINKING_FLAG = False
+                                        resp_content += "\n\n"
                                 
                                 # delta -> images
                                 if delta.get('images'):
@@ -289,6 +298,22 @@ class API:
                         index += 1
 
                         yield fake_json
+                        
+        elif image_flag:
+            async for _ in resp.aiter_content():
+                pass
+            
+            resp_data = resp.json()
+            image_json = resp_data['data'][0]['b64_json']
+            revised_prompt = resp_data['data'][0]['revised_prompt']
+            image_data = "data:image/png;base64," + image_json
+            
+            resp_content = await LocalConversation.save_image_file(image_data, self.web_origin, msg_id, img_type)
+            resp_content += '\n\n' + revised_prompt
+            
+            fake_json = {"message": {"id": msg_id, "author": {"role": "assistant", "name": None, "metadata": {}}, "create_time": create_time, "update_time": None, "content": {"content_type": "text", "parts": [resp_content]}, "status": "in_progress", "end_turn": None, "weight": 1.0, "metadata": {"citations": [], "gizmo_id": None, "message_type": "next", "model_slug": model, "parent_id": ""}, "recipient": "all"}, "conversation_id": conversation_id, "error": None}
+
+            yield fake_json
 
         else:
             resp_content = await LocalConversation.save_image_file(resp, self.web_origin, msg_id, img_type)
@@ -1852,6 +1877,7 @@ class ChatGPT(API):
             url = API_DATA[model_alias].get('url')
             auth = LocalConversation.get_auth(model)
             gemini_flag = API_DATA[model_alias].get('gemini', False)
+            image_flag = API_DATA[model_alias].get('image', False)
             headers = {'User-Agent': self.user_agent, 'Content-Type': 'application/json'}
             history_list = []
             fake_data = {
@@ -1880,6 +1906,10 @@ class ChatGPT(API):
 
             if auth:
                 headers['Authorization'] = 'Bearer ' + auth
+                
+            if image_flag:
+                fake_data = {"model": API_DATA[model].get('slug'), "prompt": content}
+                return self._request_sse(url, headers, fake_data, conversation_id, message_id, model, action, content)
 
             if prompt and not prompt_model:
                 if 'double' in model:
