@@ -300,10 +300,13 @@ class API:
                         yield fake_json
                         
         elif image_flag:
-            async for _ in resp.aiter_content():
-                pass
+            chunks = []
+            async for chunk in resp.aiter_content():
+                chunks.append(chunk)
+            content = b''.join(chunks)
             
-            resp_data = resp.json()
+            resp_data = json.loads(content.decode('utf-8'))
+            # Console.debug_b('resp_data: {}'.format(resp_data))
             image_json = resp_data['data'][0]['b64_json']
             revised_prompt = resp_data['data'][0]['revised_prompt']
             image_data = "data:image/png;base64," + image_json
@@ -1909,6 +1912,12 @@ class ChatGPT(API):
                 
             if image_flag:
                 fake_data = {"model": API_DATA[model].get('slug'), "prompt": content}
+                if action != 'variant':
+                    if not data.get('conversation_id'):
+                        conversation_id = str(uuid.uuid4())
+                        LocalConversation.create_conversation(conversation_id, content, datetime.now(tzutc()).isoformat(), isolation_code)
+                    
+                LocalConversation.save_conversation(conversation_id, message_id, content, 'user', datetime.now(tzutc()).isoformat(), model, action)
                 return self._request_sse(url, headers, fake_data, conversation_id, message_id, model, action, content)
 
             if prompt and not prompt_model:
